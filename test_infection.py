@@ -70,14 +70,3 @@ class TestInfection:
         return G 
 
 
-
-
-
-
-
-
-
-
-
-
-

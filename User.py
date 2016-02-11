@@ -5,15 +5,10 @@ Implementation of User class
 '''
 
 
-'''
-to serve as a node attribute in the graph
-'''
-
 class User(object):
-
     
-    ''' str, str, set, set -> User object '''
     def __init__(self, uuid, site_version, coaches=set(), students=set()):
+        assert type(coaches) == set and type(students) == set
 
         self.site_version = site_version
         self.coaches = coaches
@@ -32,7 +27,7 @@ class User(object):
         return self.uuid
 
 
-    ''' allows better print description '''
+    #  allows for better print description 
     def __str__(self):
         return 'version: ' + str(self.site_version) + ' uuid: ' + str(self.uuid)
 
