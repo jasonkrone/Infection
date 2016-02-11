@@ -25,7 +25,7 @@ class Infection(object):
         with the given version of the website and returns the uuid's of the 
         users in the infected component.
         '''
-        assert source_id in G.node
+        assert source_id in self.G.node
 
         # if not specified default to version of source_user 
         if version is None:
@@ -81,7 +81,7 @@ class Infection(object):
         conducts a BFS of G starting at the user with the given source_id
         and calling the given apply function when nodes are first discovered
         '''
-        assert source_id in G.node
+        assert source_id in self.G.node
 
         queue = [source_id]
         seen = set()
