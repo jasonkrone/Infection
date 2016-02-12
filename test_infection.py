@@ -1,7 +1,7 @@
 '''
 By Jason Krone for Khan Academy
 
-Contains unit tests for functions in infection
+Contains tests for functions in infection
 '''
 
 from user import User
@@ -14,19 +14,17 @@ import random as rand
 
 class TestInfection:
 
-    # proably want like a lamda function about the number of ppl that are 
-    # going to get infected if you target a person in the graph
+    MAX_NUM_SUBGRAPHS = 20
+    MAX_SUBGRAPH_SIZE = 100
 
-    # array of graph functions
-    graph_generators = [
+    # array of graph generating functions
+    GRAPH_GENERATORS = [
         nx.complete_graph,
         nx.circular_ladder_graph,
         nx.cycle_graph, 
         nx.empty_graph,
         nx.ladder_graph,
     ]
-
-    MAX_GRAPH_SIZE = 1000
 
 
     @classmethod
@@ -40,42 +38,76 @@ class TestInfection:
 
 
     def test_total_infection(self):
-        # get a graph to test on
-        size = rand.randint(1, 100)
-        G = self._rand_user_graph(size)
 
+        # get a graph to test on
+        G = self._rand_user_graph()
         infection = Infection(G)
 
         # version to infect
-        version = 'vT' 
-
+        version = 'v.Test' 
 
         # randomly pick a user to infect
+        rand_uuid = rand.randint(1, len(G)-1 )
 
-        # check which component that user is in connected_components
-        # make sure that component becomes infected with the verions
-        # and that no other components are infected
-
-
-        infection.total_infection(1, version) 
+        # get component that user is in which should be infected
+        expect_infected = self._get_cc_containing_uuid(G, rand_uuid) 
+        actual_infected = infection.total_infection(rand_uuid, version) 
 
         # check that version was spread properly
-        assert(any(u.site_version != version for u in G.node.values()) == False)
-        
+        assert(actual_infected == expect_infected)
+        assert(self._component_totally_infected(G, actual_infected, version))
+        assert(self._infection_contained(G, actual_infected, version))
 
-    # TODO: probably not going to take graph_size
-    def _rand_user_graph(self, graph_size):
-        ''' returns a graph to use for testing purposes'''
 
-        G = nx.complete_graph(graph_size)
+    def _component_totally_infected(self, G, component, version):
+        ''' determines if every user in the given component was infected with version ''' 
 
+        was_infected = True
+
+        for uuid in component:
+            was_infected = was_infected and G.node[uuid].site_version == version
+
+        return was_infected
+
+
+    def _infection_contained(self, G, infected_component, version):
+        ''' determines if the infection was contained to the given component '''
+
+        was_contained = True
+
+        # get ids of users that shouldn't have been infected
+        non_infected_uuids = [uuid for uuid in G.node if uuid not in infected_component]
+
+        for uuid in non_infected_uuids:
+            was_contained = was_contained and G.node[uuid].site_version != version
+
+        return was_contained
+
+
+    def _get_cc_containing_uuid(self, G, uuid):
+        ''' returns the connected component that contians the given uuid and None '''
+        assert G 
+
+        uuid_component = None
+        component_generator = nx.connected_components(G)
+
+        for s in component_generator:
+            if uuid in s:
+                uuid_component = s
+                break
+
+        return uuid_component
+      
+
+    # TODO: connect user objects correctly
+    # set every user to coach every other user since its a complete graph
+    # map(lambda u: u.add_coaches([x for x in users if x is not u]), users)DO: fix so that users are correctly represented as mentors etc
+    def _rand_user_graph(self):
+        ''' returns a random graph of users'''
+
+        G = self._random_graph(rand.randint(1, self.MAX_NUM_SUBGRAPHS))
 
         users = [User(uuid, 'v.' + str(uuid)) for uuid in G.node]
-
-
-        # TODO: this depends on the graph
-        # set every user to coach every other user since its a complete graph
-        map(lambda u: u.add_coaches([x for x in users if x is not u]), users)
 
         # insert user objects into graph under their uuid
         for uuid in G.node:
@@ -84,42 +116,30 @@ class TestInfection:
         return G 
 
 
-    def _random_graph_with_subs(self, num_subgraphs):
+    def _random_graph(self, num_subgraphs):
         ''' returns a graph made up of the given number of random subgraphs '''
 
-        G = self._random_graph()
+        graph_size = rand.randint(1, self.MAX_SUBGRAPH_SIZE)
+        G = self._random_subgraph(graph_size)
         
         # we just created a component
         num_subgraphs = num_subgraphs - 1
 
-        # create subgraphs  
-        for i in range(num_subgraphs)
-            graph_size = rand.randint(1, some_max)
-            H = graph_funs[RAND]()
+        # union subgraphs  
+        for i in range(num_subgraphs):
+            graph_size = rand.randint(1, self.MAX_SUBGRAPH_SIZE)
+            H = self._random_subgraph(graph_size)
             G = nx.disjoint_union(G, H)
 
         return G
 
 
-    def _random_graph(self):
-        ''' return a random type of graph of random size '''
-        idx = rand.randint(0, len(graph_generators)-1)
-        graph_gen = graph_generators[idx]
-        size = rand.randint(1, MAX_GRAPH_SIZE)
-        G = graph_gen(size)
+    def _random_subgraph(self, graph_size):
+        ''' return a random type of graph of the given size '''
+
+        idx = rand.randint(0, len(self.GRAPH_GENERATORS)-1)
+        graph_gen = self.GRAPH_GENERATORS[idx]
+        G = graph_gen(graph_size)
         return G
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
