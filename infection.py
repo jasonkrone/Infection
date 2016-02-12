@@ -12,76 +12,75 @@ from user import User
 class Infection(object):
 
 
-    def __init__(self, user_graph):
+    def __init__(self, user_graph, student_graph=None):
         '''creates a new infection object with the given nx.Graph'''
         assert type(user_graph) is nx.Graph
         
         self.G = user_graph
+        self.CG = student_graph # this will look like connected cliques
 
 
-    def total_infection(self, source_id, version=None):
+    # TODO change this to take the graph
+    def total_infection(self, G, source_id, version=None):
         '''
         infects the connected component containing the user with start_id 
         with the given version of the website and returns the uuid's of the 
         users in the infected component.
         '''
-        assert source_id in self.G.node
+        assert source_id in G 
 
         # if not specified default to version of source_user 
         if version is None:
-            version = self.G.node[source_id].site_version
+            version = G.node[source_id].site_version
 
         # spread the version using a BFS
-        infected = self._bfs_apply(source_id, lambda uuid: self.G.node[uuid].set_site_version(version))
+        infected = self._bfs_apply(G, source_id, lambda uuid: G.node[uuid].set_site_version(version))
 
         return infected
 
 
-    def limited_infection(self, limit_fun, version):
+    def limited_infection(self, n, delta, version):
+        ''' 
+        Infects m students with the given version where n - delta <= m <= n + delta
+
+        Maintains contract that student who share a class must have the same version
+        using the student graph (SG)
         '''
-        Infects a connect component of self.G whose size meets the contraints
-        set by the given limit_fun, returning the component infected on success
-        and None on failure.
-        '''
-        assert limit_fun is not None
+
 
         infected = None
+        components = nx.connected_components(self.SG)
+        component_dict = dict() 
 
-        uuid_source = source_limited_infection(limit_fun)
+        # use size of components as keys, with uuids of users in components as values
+        for c in component:
+            component_dict[len(c)] = c
 
-        if uuid_source is not None:
-            infected = total_infection(uuid_source)
+        subset = self._subset_sum_within_range(n - delta, n + delta)
 
-        return infected
+        # there was no subset that summed within our range 
+        if subset is None:
+            return None
 
+        # infect students with version and add them to infected set
+        for idx in subset:
+            source_id = component_dict[idx].pop
+            infected.extend(self.total_infection(source_id, version))    # add graph to this
 
-    def source_limited_infection(self, limit_fun):
-        '''
-        returns the uuid of the user from which you can spread an infection 
-        that will be limited to m users where m is a number such that 
-        limit_fun(m) returns True if such a user exists. Otherwise, returns none.
-        '''
-        assert limit_fun is not None
-
-        seen = set()
-
-        for uuid in self.G:
-            if v not in seen:
-                component = _bfs_apply(v) 
-                seen.update(component)
-
-            if limit_fun(len(component)):
-                return v   
-
-        return None
+        return Infected
 
 
-    def _bfs_apply(self, source_id, apply_fun=None):
+
+    ''' GRAPH HELPER METHODS '''
+   
+
+
+    def _bfs_apply(self, G, source_id, apply_fun=None):
         '''
         conducts a BFS of G starting at the user with the given source_id
         and calling the given apply function when nodes are first discovered
         '''
-        assert source_id in self.G.node
+        assert source_id in G.node
 
         queue = [source_id]
         seen = set()
@@ -94,8 +93,73 @@ class Infection(object):
 
                 seen.add(uuid)
                 # add uninfected neighbors (i.e. students and teachers)
-                queue.extend(set(self.G.neighbors(uuid)) - seen)
+                queue.extend(set(G.neighbors(uuid)) - seen)
 
         return seen 
 
+
+
+    ''' SUBSET SUM HELPER METHODS '''
+
+
+
+    def _subset_sum_within_range(nums, n, delta):
+        ''' 
+        returns a subset of the given numbers that sum within the given range
+        (n - delta, n + delta) if such a subset exists.  Otherwise, returns None
+        '''
+
+        subset = None
+        subset_sum_arr = self._positive_subset_sum_table(nums, n + delta)
+
+        # loop through values in range n - k to n + k
+        for i in range(n - delta, n + delta + 1):
+
+            # check if there is a sum set sum to i
+            if type(subset_sum_arr[i]) is tuple:
+                # get the subset that sums to i
+                subset = self._get_subset_with_sum(subset_sum_arr, i)
+                break
+
+        return subset
+
+
+    def _get_subset_with_sum(table, n):
+        '''
+        returns the subset of numbers listed in the table that sum to n
+        '''
+
+        subset = []
+        i = n
+
+        while i > 0:
+            subset.append(table[i][1])
+            i = table[i][2]
+
+        return subset
+
+
+    def _positive_subset_sum_table(A, x):
+        '''
+        attribution: this code was modified from
+        http://www.geekviewpoint.com/python/dynamic_programming/positive_subset_sum
+        '''
+
+        # preliminary
+        if x < 0 or x > sum( A ): # T = sum(A)
+            return None 
+     
+        # algorithm
+        sub_sum = [None] * ( x + 1 )
+        sub_sum[0] = (True, 0, 0)
+        p = 0
+        while not sub_sum[x] and p < len( A ):
+            a = A[p]
+            q = x
+            while not sub_sum[x] and q >= a:
+                if not sub_sum[q] and sub_sum[q - a]:
+                    sub_sum[q] = (True , a, q - a)
+                q -= 1
+            p += 1
+        return sub_sum
 

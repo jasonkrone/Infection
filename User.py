@@ -7,14 +7,15 @@ Implementation of User class
 
 class User(object):
     
-    def __init__(self, uuid, site_version, coaches=set(), students=set()):
+    def __init__(self, uuid, site_version, coaches=set(), students=set(), classes=set()):
         assert type(coaches) == set and type(students) == set
 
         self.site_version = site_version
         self.coaches = coaches
         self.students = students 
         self.uuid = uuid
-
+        self.classes = classes
+  
 
     def __eq__(self, other):
         try:
@@ -30,6 +31,14 @@ class User(object):
     #  allows for better print description 
     def __str__(self):
         return 'version: ' + str(self.site_version) + ' uuid: ' + str(self.uuid)
+
+
+    def is_student(self):
+        return len(self.coaches) > 0
+
+
+    def is_coach(self):
+        return len(self.students) > 0
 
 
     def set_site_version(self, site_version):
