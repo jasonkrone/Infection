@@ -15,7 +15,7 @@ class UserGraphGenerator(object):
     GRAPH_GENERATORS = [
         nx.complete_graph,
         nx.circular_ladder_graph,
-        nx.cycle_graph, 
+        nx.cycle_graph,
         nx.empty_graph,
         nx.ladder_graph,
     ]
@@ -26,13 +26,30 @@ class UserGraphGenerator(object):
         self.max_subgraph_size = max_subgraph_size
 
 
-    # TODO: connect user objects correctly
-    # set every user to coach every other user since its a complete graph
-    # map(lambda u: u.add_coaches([x for x in users if x is not u]), users)DO: fix so that users are correctly represented as mentors etc
-    def random_user_graph(self):
-        ''' returns a random graph of users'''
+    def random_student_graph(self):
+        ''' 
+        returns a random graph of students with max size
+        num_max_subgraphs * max_subgraph_size 
+        '''
+        # created random graph only using complete subgraphs
+        SG = self._random_graph(rand.randint(1, self.max_subgraphs), self.GRAPH_GENERATORS[:1])
 
-        G = self._random_graph(rand.randint(1, self.max_subgraphs))
+        users = [User(uuid, 'v.' + str(uuid)) for uuid in SG.node]
+
+        # insert user objects into graph under their uuid
+        for uuid in SG.node:
+            SG.node[uuid] = users[uuid]
+
+        return SG 
+
+
+    def random_user_graph(self):
+        ''' 
+        returns a random graph of users  with max size
+        num_max_subgraphs * max_subgraph_size 
+        '''
+
+        G = self._random_graph(rand.randint(1, self.max_subgraphs), self.GRAPH_GENERATORS)
 
         users = [User(uuid, 'v.' + str(uuid)) for uuid in G.node]
 
@@ -43,11 +60,14 @@ class UserGraphGenerator(object):
         return G 
 
 
-    def _random_graph(self, num_subgraphs):
-        ''' returns a graph made up of the given number of random subgraphs '''
+    def _random_graph(self, num_subgraphs, generators):
+        ''' 
+        returns a graph made up of the given number of random subgraphs created
+        using the given graph generation functions
+        '''
 
         graph_size = rand.randint(1, self.max_subgraph_size)
-        G = self._random_subgraph(graph_size)
+        G = self._random_subgraph(graph_size, generators)
         
         # we just created a component
         num_subgraphs = num_subgraphs - 1
@@ -55,17 +75,20 @@ class UserGraphGenerator(object):
         # union subgraphs  
         for i in range(num_subgraphs):
             graph_size = rand.randint(1, self.max_subgraph_size)
-            H = self._random_subgraph(graph_size)
+            H = self._random_subgraph(graph_size, generators)
             G = nx.disjoint_union(G, H)
 
         return G
 
 
-    def _random_subgraph(self, graph_size):
-        ''' return a random type of graph of the given size '''
+    def _random_subgraph(self, graph_size, generators):
+        '''
+        return a random graph of the given size using a method from 
+        the given list of graph generators
+        '''
 
-        idx = rand.randint(0, len(self.GRAPH_GENERATORS)-1)
-        graph_gen = self.GRAPH_GENERATORS[idx]
+        idx = rand.randint(0, len(generators)-1)
+        graph_gen = generators[idx]
         G = graph_gen(graph_size)
         return G
 
