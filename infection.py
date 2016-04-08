@@ -12,7 +12,7 @@ from utils import *
 
 def total_infection(G, source_id, version=None):
     '''
-    infects the connected component containing the user with start_id 
+    infects the connected component containing the user with source_id 
     with the given version of the website and returns the uuid's of the 
     users in the infected component.
     '''
@@ -31,6 +31,7 @@ def total_infection(G, source_id, version=None):
 def limited_infection(SG, n, delta, version):
     ''' 
     Infects m students with the given version where n - delta <= m <= n + delta
+    and returns the uuids of the infected students.
 
     Maintains contract that student who share a class must have the same version
     using the student graph (SG)
@@ -59,7 +60,7 @@ def limited_infection(SG, n, delta, version):
 
 
 
-''' GRAPH HELPER METHODS '''
+''' GRAPH HELPER FUNCTIONS '''
 
 
 
